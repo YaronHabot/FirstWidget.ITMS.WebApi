@@ -1,0 +1,101 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>First Widget</title>
+    <style>
+        table {
+            border: 0
+        }
+    </style>
+</head>
+<body>
+    <h4><a href='employee.html'>Employee Management</a></h4>
+    <h1>Employee Integrity Monitor</h1>
+    <p></p>
+    <div>
+        <button id="connectButton" type="submit">Accept Alerts</button>
+    </div>
+    <p id="stateLabel">Ready to connect...</p>
+    <p></p>
+    <h2>Alerts Log</h2>
+    <table style="width: 800px">
+        <thead>
+            <tr>
+                <td style="width: 100px">SSN</td>
+                <td style="width: 100px">Alert</td>
+                <td>Source</td>
+            </tr>
+        </thead>
+        <tbody id="commsLog">
+        </tbody>
+    </table>
+
+    <script>
+        var connectButton = document.getElementById("connectButton");
+        var stateLabel = document.getElementById("stateLabel");
+        var commsLog = document.getElementById("commsLog");
+        var socket;
+        var scheme = document.location.protocol === "https:" ? "wss" : "ws";
+        var port = document.location.port ? (":" + document.location.port) : "";
+        let connectionUrl = scheme + "://" + document.location.hostname + port + "/push" ;
+        
+        connectButton.onclick = function() {
+            stateLabel.innerHTML = "Connecting";
+            socket = new WebSocket(connectionUrl);
+            socket.onopen = function (event) {
+                updateState();
+                stateLabel.innerHTML = "Connectiopn opened";
+
+                //Register this client in the websocket server
+                var data = 'FirstWidgetClient1';
+                socket.send(data);                
+            };
+            socket.onclose = function (event) {
+                updateState();
+                stateLabel.innerHTML = 'Connection closed. Code: ' + htmlEscape(event.code) + '. Reason: ' + htmlEscape(event.reason);
+            };
+            socket.onerror = updateState;
+            socket.onmessage = function (event) {
+                console.log(event);
+                let alertInfo = JSON.parse(event.data);
+                commsLog.innerHTML += '<tr>' +
+                    '<td>' + htmlEscape(alertInfo.SSN) + '</td>' +
+                    '<td>' + htmlEscape(alertInfo.Message) + '</td>' +
+                    '<td>' + htmlEscape(alertInfo.Sender) + '</td></tr>';
+            };
+        };
+        function htmlEscape(str) {
+            return str.toString()
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function updateState() {
+            connectButton.disabled = true;
+            if (socket) {
+                switch (socket.readyState) {
+                    case WebSocket.CLOSED:
+                        connectButton.disabled = false;
+                        break;
+                    case WebSocket.CLOSING:
+                        stateLabel.innerHTML = "Closing...";
+                        break;
+                    case WebSocket.CONNECTING:
+                        stateLabel.innerHTML = "Connecting...";
+                        break;
+                    case WebSocket.OPEN:
+                        stateLabel.innerHTML = "Open";
+                        break;
+                    default:
+                        stateLabel.innerHTML = "Unknown WebSocket State: " + htmlEscape(socket.readyState);
+                        break;
+                }
+            }
+        }
+    </script>
+</body>
+</html>

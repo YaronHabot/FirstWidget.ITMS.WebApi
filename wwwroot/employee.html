@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>First Widget</title>
+    <style>
+        h2 {
+            /* Center the form on the page */
+            margin: 0 auto;
+            width: 500px;
+        }
+        form {
+            /* Center the form on the page */
+            margin: 0 auto;
+            width: 500px;
+            /* Form outline */
+            padding: 1em;
+            border: 1px solid #CCC;
+            border-radius: 1em;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        form li + li {
+            margin-top: 1em;
+        }
+
+        label {
+            /* Uniform size & alignment */
+            display: inline-block;
+            width: 90px;
+            text-align: right;
+        }
+
+        input,
+        textarea {
+            /* To make sure that all text fields have the same font settings
+                By default, textareas have a monospace font */
+            font: 1em sans-serif;
+
+            /* Uniform text field size */
+            width: 300px;
+            box-sizing: border-box;
+
+            /* Match form field borders */
+            border: 1px solid #999;
+        }
+
+        input:focus,
+        textarea:focus {
+            /* Additional highlight for focused elements */
+            border-color: #000;
+        }
+
+        textarea {
+            /* Align multiline text fields with their labels */
+            vertical-align: top;
+
+            /* Provide space to type some text */
+            height: 5em;
+        }
+
+        .button {
+            /* Align buttons with the text fields */
+            padding-left: 90px; /* same size as the label elements */
+            }
+
+        button {
+            /* This extra margin represent roughly the same space as the space
+                between the labels and their text fields */
+            margin-left: .5em;
+        }
+    </style>
+</head>
+<body>
+    <h4><a href='index.html'>Employee Monitor</a></h4>
+    <h2>Search employee</h2>
+    <p></p>
+    <form action="javascript:void(0);">
+        <ul>
+            <li>
+                <label for="ssnSearch">SSN: *</label>
+                <input 
+                    type="text" 
+                    id="ssnSearch" 
+                    name="SSN" 
+                    placeholder="xxxxxxxxx" 
+                    required
+                    pattern="[0-9]{9}"
+                    oninvalid="this.setCustomValidity('Enter 9 digits no hyphens')"
+                    oninput="this.setCustomValidity('')"
+                >
+                <button id="searchButton">Search</button>                
+            </li>
+        </ul>
+    </form>
+    
+    <p></p>
+    <h2>Manage employee</h2>
+    <p></p>
+    <form action="javascript:void(0);">
+        <ul>
+            <li>
+                <label for="ssn">SSN: *</label>
+                <input 
+                    type="text" 
+                    id="ssn" 
+                    name="SSN" 
+                    placeholder="xxxxxxxxx" 
+                    required
+                    pattern="[0-9]{9}"
+                    oninvalid="this.setCustomValidity('Enter 9 digits no hyphens')"
+                    oninput="this.setCustomValidity('')"
+                >
+            </li>     
+            <li>
+                <label for="first_name">First Name: *</label>
+                <input type="text" id="firstName" name="FirstName" required>
+            </li>
+            <li>
+                <label for="last_name">Last Name: *</label>
+                <input type="text" id="lastName" name="LastName" required>
+            </li>
+            <li>
+                <label for="address">Address: *</label>
+                <input type="text" id="address" name="Address" required>
+            </li>
+            <li>
+                <label for="city">City: *</label>
+                <input type="text" id="city" name="City" required>
+            </li>
+            <li>
+                <label for="state">State: *</label>
+                <input type="text" id="state" name="State" required>
+            </li>
+            <li class="button">
+                <button id="employeeCreateButton">Add</button>
+                <button id="employeeUpdateButton">Update</button>
+                <button id="clearFormButton">Clear Form</button>
+            </li>
+        </ul>
+    </form>
+
+    <!--YH Due to shortness of time of the code test, I'm embedding the script in the html.
+        In real application I would have the javascript code reside in .js files. -->
+    <script>
+        const searchButton = document.getElementById("searchButton");
+        const employeeCreateButton = document.getElementById("employeeCreateButton");
+        const employeeUpdateButton = document.getElementById("employeeUpdateButton");
+        const clearFormButtonButton = document.getElementById("clearFormButton");
+
+        searchButton.onclick = function() {
+            const ssn = document.getElementById("ssnSearch").value;
+            if (validSSN(ssn)) {
+                const apiUrl = "/employee?ssn=" + ssn;
+
+                const xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4) {
+                        if (this.status == 200) {
+                            const employees = JSON.parse(this.responseText);
+                            if (employees && employees.length > 0) {
+                                const employee = employees[0];
+                                document.getElementById("ssn").value = employee.ssn;
+                                document.getElementById("firstName").value = employee.firstName;
+                                document.getElementById("lastName").value = employee.lastName;
+                                document.getElementById("address").value = employee.address;
+                                document.getElementById("city").value = employee.city;
+                                document.getElementById("state").value = employee.state;
+                            }
+                        } else {
+                            alert(this.responseText);
+                        }                    
+                    }
+                };
+                xhttp.open("GET", apiUrl, true);
+                xhttp.send(null);
+            }
+        }
+
+        employeeCreateButton.onclick = function() {
+            callEmployeeAPI("POST");
+        }
+
+        employeeUpdateButton.onclick = function() {
+            callEmployeeAPI("PUT");
+        }
+
+        clearFormButtonButton.onclick = function() {
+            document.getElementById("ssn").value = '';
+            document.getElementById("firstName").value = '';
+            document.getElementById("lastName").value = '';
+            document.getElementById("address").value = '';
+            document.getElementById("city").value = '';
+            document.getElementById("state").value = '';
+        }
+
+        function callEmployeeAPI(methodType) {            
+            //Fetch employee data from the form            
+            const ssn = document.getElementById("ssn").value;
+            const firstName = document.getElementById("firstName").value;
+            const lastName = document.getElementById("lastName").value;
+            const address = document.getElementById("address").value;
+            const city = document.getElementById("city").value;
+            const state = document.getElementById("state").value;
+            const port = document.location.port ? (":" + document.location.port) : "";
+            //const apiUrl = document.location.protocol + "://" + document.location.hostname + port + "/employee" ;
+            const apiUrl = "/employee";
+            const employeeData = {
+                ssn: ssn,
+                firstName: firstName,
+                lastName: lastName,
+                address: address,
+                city: city,
+                state: state
+            };
+            
+            const validForm = validSSN(ssn) && firstName && lastName && address && city && state;
+            if (validForm) {
+                const xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        alert(this.responseText);
+                    }
+                };
+                xhttp.open(methodType, apiUrl, true);
+                xhttp.setRequestHeader("Content-type", "application/json");
+                xhttp.send(JSON.stringify(employeeData));
+            }
+        }
+
+        function validSSN(ssn) {
+            return /^[0-9]{9}$/.test(ssn);
+        }
+    </script>
+</body>
+</html>
